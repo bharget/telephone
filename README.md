@@ -1,5 +1,7 @@
 # Telephone ☎️
 
+![](https://github.com/bharget/telephone/actions/workflows/ci.yml/badge.svg)
+
 Telephone is a light weight utility that helps you create and call service objects from anywhere within your application.
 
 Telepone comes with a simple interface that helps with:
