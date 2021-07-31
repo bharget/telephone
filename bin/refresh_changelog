@@ -180,7 +180,7 @@ module AutoChangelog
 end
 
 AutoChangelog.configure do |config|
-  config.app_version = Heroicon::VERSION
+  config.app_version = Telephone::VERSION
 
   config.entry_sections = [
     {title: "Bug Fixes", marker: ";B"},
