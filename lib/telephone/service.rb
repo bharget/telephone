@@ -17,6 +17,18 @@ module Telephone
     attr_accessor :result
 
     ##
+    # Primary responsibility of initialize is to instantiate the
+    # attributes of the service object with the expected values.
+    def initialize(attributes = {})
+      self.class.defaults.merge(attributes).each do |key, value|
+        send("#{key}=", value)
+      end
+
+      super
+      yield self if block_given?
+    end
+
+    ##
     # Determines whether or not the action of the service
     # object was successful.
     #

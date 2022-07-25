@@ -32,6 +32,16 @@ RSpec.describe Telephone::Service do
     end
   end
 
+  describe "#new" do
+    it "sets defaults" do
+      expect(subject.new.foo).to be "bar"
+    end
+
+    it "accepts default overrides" do
+      expect(subject.new(foo: "baz").foo).to be "baz"
+    end
+  end
+
   describe "#call" do
     context "when validations pass" do
       before do
