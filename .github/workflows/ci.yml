@@ -5,25 +5,22 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        ruby: [2.6, 2.7, "3.0"]
+        ruby: [2.7, "3.0"]
     steps:
-      - uses: actions/checkout@v3
-      - name: Set up Ruby ${{ matrix.ruby }}
-        uses: ruby/setup-ruby@v1
+      - uses: actions/checkout@v2
+      - uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ matrix.ruby }}
-      - name: Install dependencies
-        run: bundle install
-      - name: Run tests
-        run: bundle exec rake test
+          bundler-cache: true
+      - run: bundle exec rake test
 
   lint:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        ruby: [2.6]
+        ruby: [2.7]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v2
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ matrix.ruby }}
