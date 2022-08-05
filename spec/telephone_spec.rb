@@ -6,7 +6,7 @@ RSpec.describe Telephone::Service do
       argument :foo, default: "bar"
 
       def call
-        true
+        foo
       end
     end
   end
@@ -29,6 +29,36 @@ RSpec.describe Telephone::Service do
       subject.public_send(:argument, :required_field, required: true)
 
       expect(subject.call.success?).to be false
+    end
+  end
+
+  describe "#new" do
+    it "sets defaults" do
+      expect(subject.new.foo).to be "bar"
+    end
+
+    it "accepts default overrides" do
+      expect(subject.new(foo: "baz").foo).to be "baz"
+    end
+
+    context "if there is a required argument" do
+      before { subject.public_send(:argument, :required_field, required: true) }
+
+      it "cannot call without the required argument" do
+        instance = subject.new
+        expect(instance.valid?).to be false
+        expect(instance.call).to be_a Telephone::Service
+        expect(instance.call.success?).to be false
+      end
+
+      it "works as expected with the required argument" do
+        instance = subject.new(required_field: "baz")
+
+        expect(instance.required_field).to be "baz"
+        expect(instance.call.success?).to be true
+        expect(instance.call.result).to be instance.foo
+        expect(instance.call).to be_a Telephone::Service
+      end
     end
   end
 
@@ -61,8 +91,8 @@ RSpec.describe Telephone::Service do
         expect(subject.call.success?).to be false
       end
 
-      it "does not call the instance level #call" do
-        subject.any_instance.expects(:call).never
+      it "does not call the instance level #__call" do
+        subject.any_instance.expects(:__call).never
 
         subject.call
       end

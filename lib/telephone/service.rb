@@ -17,6 +17,18 @@ module Telephone
     attr_accessor :result
 
     ##
+    # Primary responsibility of initialize is to instantiate the
+    # attributes of the service object with the expected values.
+    def initialize(attributes = {})
+      self.class.defaults.merge(attributes).each do |key, value|
+        send("#{key}=", value)
+      end
+
+      super
+      yield self if block_given?
+    end
+
+    ##
     # Determines whether or not the action of the service
     # object was successful.
     #
@@ -26,6 +38,11 @@ module Telephone
     # @return [Boolean] whether or not the action succeeded.
     def success?
       errors.empty?
+    end
+
+    def call
+      self.result = __call if valid?
+      self
     end
 
     class << self
@@ -66,9 +83,19 @@ module Telephone
       # @example
       #   Telephone::Service.call(foo: bar)
       def call(**args)
-        instance = new(defaults.merge(args))
-        instance.result = instance.call if instance.valid?
-        instance
+        new(args).call
+      end
+
+      ##
+      # When the subclass overwrites the #call method, reassign it to #__call.
+      # This allows us to still control what happens in the instance level of #call.
+      def method_added(method_name)
+        if method_name == :call
+          alias_method :__call, :call
+          send(:remove_method, :call)
+        else
+          super
+        end
       end
     end
   end
