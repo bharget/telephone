@@ -40,6 +40,11 @@ module Telephone
       errors.empty?
     end
 
+    def call
+      self.result = __call if valid?
+      self
+    end
+
     class << self
       ##
       # Defines a getter/setter for a service object argument. This also allows you
@@ -78,9 +83,19 @@ module Telephone
       # @example
       #   Telephone::Service.call(foo: bar)
       def call(**args)
-        instance = new(defaults.merge(args))
-        instance.result = instance.call if instance.valid?
-        instance
+        new(args).call
+      end
+
+      ##
+      # When the subclass overwrites the #call method, reassign it to #__call.
+      # This allows us to still control what happens in the instance level of #call.
+      def method_added(method_name)
+        if method_name == :call
+          alias_method :__call, :call
+          send(:remove_method, :call)
+        else
+          super
+        end
       end
     end
   end
