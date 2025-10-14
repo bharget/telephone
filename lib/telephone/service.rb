@@ -20,7 +20,11 @@ module Telephone
     # Primary responsibility of initialize is to instantiate the
     # attributes of the service object with the expected values.
     def initialize(attributes = {})
-      self.class.defaults.merge(attributes).each do |key, value|
+      evaluated_defaults = self.class.defaults.transform_values do |value|
+        value.respond_to?(:call) ? value.call : value
+      end
+
+      evaluated_defaults.merge(attributes).each do |key, value|
         send("#{key}=", value)
       end
 
@@ -51,14 +55,20 @@ module Telephone
       # to pass in a default, or set the argument to "required" to add a validation
       # that runs before executing the block.
       #
+      # The default value can be a static value or any callable object (Proc, lambda,
+      # method, or any object that responds to #call) that will be evaluated at
+      # runtime when the service is instantiated.
+      #
       # @example
       #   class SomeService < Telephone::Service
       #     argument :foo, default: "bar"
       #     argument :baz, required: true
+      #     argument :timestamp, default: -> { DateTime.current }
       #
       #     def call
       #       puts foo
       #       puts baz
+      #       puts timestamp
       #     end
       #   end
       def argument(arg, default: nil, required: false)
