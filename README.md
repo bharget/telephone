@@ -94,6 +94,24 @@ You can also give a default value for an argument.
 argument :name, default: "Benjamin"
 ```
 
+Defaults can also be callable (procs or lambdas) that are evaluated at runtime. Callable defaults have access to other attributes and are processed in definition order:
+
+```ruby
+class GreetingService < ApplicationService
+  argument :first_name, default: "John"
+  argument :last_name, default: "Doe"
+  argument :full_name, default: -> { "#{first_name} #{last_name}" }
+  argument :created_at, default: -> { Time.current }
+
+  def call
+    "Hello, #{full_name}!"
+  end
+end
+
+GreetingService.call.result #=> "Hello, John Doe!"
+GreetingService.call(first_name: "Jane").result #=> "Hello, Jane Doe!"
+```
+
 ### Validations
 
 Since `Telephone::Service` includes `ActiveModel::Model`, you can define validations in the same way you would for an ActiveRecord model.
