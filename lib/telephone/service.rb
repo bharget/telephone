@@ -20,6 +20,8 @@ module Telephone
     # Primary responsibility of initialize is to instantiate the
     # attributes of the service object with the expected values.
     def initialize(attributes = {})
+      attributes = attributes.transform_keys(&:to_sym)
+
       attributes.each do |key, value|
         send("#{key}=", value)
       end

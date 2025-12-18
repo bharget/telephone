@@ -152,6 +152,19 @@ RSpec.describe Telephone::Service do
       expect(subject.new(foo: "baz").foo).to be "baz"
     end
 
+    it "accepts string keys" do
+      expect(subject.new("foo" => "baz").foo).to eq "baz"
+    end
+
+    it "handles string keys with callable defaults" do
+      service = Class.new(Telephone::Service) do
+        argument :name, default: "Default"
+        argument :message, default: -> { "Hello, #{name}!" }
+      end
+
+      expect(service.new("name" => "Custom").message).to eq "Hello, Custom!"
+    end
+
     context "if there is a required argument" do
       before { subject.public_send(:argument, :required_field, required: true) }
 
