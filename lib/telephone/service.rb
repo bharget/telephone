@@ -40,8 +40,18 @@ module Telephone
         send("#{key}=", resolved)
       end
 
+      validate_required_arguments!(attributes)
+
       super
       yield self if block_given?
+    end
+
+    def validate_required_arguments!(attributes)
+      self.class.required_arguments.each do |arg|
+        unless attributes.key?(arg)
+          raise ArgumentError, "missing required argument: #{arg}"
+        end
+      end
     end
 
     ##
@@ -63,9 +73,12 @@ module Telephone
 
     class << self
       ##
-      # Defines a getter/setter for a service object argument. This also allows you
-      # to pass in a default, or set the argument to "required" to add a validation
-      # that runs before executing the block.
+      # Defines a getter/setter for a service object argument.
+      #
+      # @param arg [Symbol] The name of the argument
+      # @param default [Object, Proc] Default value or callable that returns the default
+      # @param required [Boolean] If true, raises ArgumentError if argument is not provided
+      # @param validates [Hash] ActiveModel validation options to apply
       #
       # The default value can be a static value or any callable object (Proc, lambda,
       # method, or any object that responds to #call) that will be evaluated at
@@ -75,24 +88,30 @@ module Telephone
       # so they can access other attributes. They are processed in definition order,
       # meaning a callable can depend on any argument defined before it.
       #
+      # The +required+ option checks if the argument key was provided, not if the
+      # value is present. Passing +nil+ explicitly satisfies the requirement.
+      #
       # To store a Proc as the actual value, wrap it in another lambda:
       #   argument :my_proc, default: -> { -> { puts "hi" } }
       #
-      # @example
+      # @example Basic usage
+      #   argument :name, default: "John"
+      #   argument :name, required: true
+      #
+      # @example With validations
+      #   argument :email, validates: { format: { with: /@/ } }
+      #   argument :name, required: true, validates: { length: { minimum: 2 } }
+      #
+      # @example With callable defaults
       #   class SomeService < Telephone::Service
       #     argument :first_name, default: "John"
       #     argument :last_name, default: "Doe"
       #     argument :full_name, default: -> { "#{first_name} #{last_name}" }
-      #     argument :timestamp, default: -> { DateTime.current }
-      #
-      #     def call
-      #       puts full_name
-      #       puts timestamp
-      #     end
       #   end
-      def argument(arg, default: nil, required: false)
-        send(:attr_accessor, arg.to_sym)
-        send(:validates, arg.to_sym, presence: true) if required
+      def argument(arg, default: nil, required: false, validates: nil)
+        attr_accessor(arg.to_sym)
+        required_arguments << arg.to_sym if required
+        validates(arg.to_sym, validates) if validates
 
         defaults[arg.to_sym] = default
       end
@@ -102,6 +121,13 @@ module Telephone
       # based on the options in #argument.
       def defaults
         @defaults ||= {}
+      end
+
+      ##
+      # List of arguments marked as required. Uses a nil check instead of
+      # presence validation to avoid triggering queries on ActiveRecord relations.
+      def required_arguments
+        @required_arguments ||= []
       end
 
       ##
