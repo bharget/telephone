@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 namespace :telephone do
   desc "Migrate required: true to include validates: { presence: true } for v2.0 compatibility"
   task :migrate, [:path] do |_t, args|
@@ -17,12 +15,10 @@ namespace :telephone do
       content = File.read(file)
       original = content.dup
 
-      # Match argument with required: true that doesn't already have validates:
       content.gsub!(/^(\s*argument\s+:\w+.*)required:\s*true(.*)$/) do |line|
         if line.include?("validates:")
           line
         else
-          indent = line[/^\s*/]
           line.sub(/required:\s*true/, "required: true, validates: { presence: true }")
         end
       end

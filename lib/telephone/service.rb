@@ -123,9 +123,6 @@ module Telephone
         @defaults ||= {}
       end
 
-      ##
-      # List of arguments marked as required. Uses a nil check instead of
-      # presence validation to avoid triggering queries on ActiveRecord relations.
       def required_arguments
         @required_arguments ||= []
       end
