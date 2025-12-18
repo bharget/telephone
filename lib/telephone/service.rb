@@ -20,12 +20,22 @@ module Telephone
     # Primary responsibility of initialize is to instantiate the
     # attributes of the service object with the expected values.
     def initialize(attributes = {})
-      evaluated_defaults = self.class.defaults.transform_values do |value|
-        value.respond_to?(:call) ? value.call : value
+      attributes.each do |key, value|
+        send("#{key}=", value)
       end
 
-      evaluated_defaults.merge(attributes).each do |key, value|
-        send("#{key}=", value)
+      self.class.defaults.each do |key, value|
+        next if attributes.key?(key)
+
+        resolved = if value.is_a?(Proc)
+          instance_exec(&value)
+        elsif value.respond_to?(:call)
+          value.call
+        else
+          value
+        end
+
+        send("#{key}=", resolved)
       end
 
       super
@@ -59,15 +69,22 @@ module Telephone
       # method, or any object that responds to #call) that will be evaluated at
       # runtime when the service is instantiated.
       #
+      # Callable defaults are evaluated in the context of the service instance,
+      # so they can access other attributes. They are processed in definition order,
+      # meaning a callable can depend on any argument defined before it.
+      #
+      # To store a Proc as the actual value, wrap it in another lambda:
+      #   argument :my_proc, default: -> { -> { puts "hi" } }
+      #
       # @example
       #   class SomeService < Telephone::Service
-      #     argument :foo, default: "bar"
-      #     argument :baz, required: true
+      #     argument :first_name, default: "John"
+      #     argument :last_name, default: "Doe"
+      #     argument :full_name, default: -> { "#{first_name} #{last_name}" }
       #     argument :timestamp, default: -> { DateTime.current }
       #
       #     def call
-      #       puts foo
-      #       puts baz
+      #       puts full_name
       #       puts timestamp
       #     end
       #   end
