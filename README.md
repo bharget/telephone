@@ -71,7 +71,7 @@ end
 SimpleExample.call(name: "Benjamin").result #=> "Hello, Benjamin."
 ```
 
-Arguments can also be required, which will prevent the service object from executing unless they are present.
+Arguments can also be required, which will raise an `ArgumentError` if not provided:
 
 ```ruby
 class SimpleExample < ApplicationService
@@ -82,10 +82,8 @@ class SimpleExample < ApplicationService
   end
 end
 
-s = SimpleExample.call
-s.success? #=> false
-s.errors.full_messages #=> ["Name can't be blank"]
-s.result #=> nil
+SimpleExample.call #=> ArgumentError: missing required argument: name
+SimpleExample.call(name: nil) #=> works - nil is a valid value
 ```
 
 You can also give a default value for an argument.
@@ -110,6 +108,13 @@ end
 
 GreetingService.call.result #=> "Hello, John Doe!"
 GreetingService.call(first_name: "Jane").result #=> "Hello, Jane Doe!"
+```
+
+Arguments can also have inline validations using the `validates:` option:
+
+```ruby
+argument :email, validates: { format: { with: /@/ } }
+argument :name, required: true, validates: { length: { minimum: 2 } }
 ```
 
 ### Validations
@@ -155,3 +160,16 @@ yard server --reload
 The `--reload`, or `-r`, flag tells the server to auto reload the documentation on each request.
 
 Once the server is running, the documentation will by available at http://localhost:8808
+
+## Upgrading to 2.0
+
+Version 2.0 changes the behavior of `required: true`. Previously it added a presence validation; now it raises `ArgumentError` if the argument key isn't provided.
+
+To migrate, run:
+
+```bash
+rake telephone:migrate                    # defaults to app/services
+rake telephone:migrate[path/to/services]  # custom path
+```
+
+This adds `validates: { presence: true }` to preserve the old validation behavior.

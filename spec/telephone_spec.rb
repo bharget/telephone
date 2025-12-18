@@ -28,7 +28,7 @@ RSpec.describe Telephone::Service do
     it "allows requiring an argument" do
       subject.public_send(:argument, :required_field, required: true)
 
-      expect(subject.call.success?).to be false
+      expect { subject.call }.to raise_error(ArgumentError)
     end
 
     context "with callable defaults" do
@@ -168,11 +168,8 @@ RSpec.describe Telephone::Service do
     context "if there is a required argument" do
       before { subject.public_send(:argument, :required_field, required: true) }
 
-      it "cannot call without the required argument" do
-        instance = subject.new
-        expect(instance.valid?).to be false
-        expect(instance.call).to be_a Telephone::Service
-        expect(instance.call.success?).to be false
+      it "raises ArgumentError when argument is not provided" do
+        expect { subject.new }.to raise_error(ArgumentError, "missing required argument: required_field")
       end
 
       it "works as expected with the required argument" do
@@ -182,6 +179,37 @@ RSpec.describe Telephone::Service do
         expect(instance.call.success?).to be true
         expect(instance.call.result).to be instance.foo
         expect(instance.call).to be_a Telephone::Service
+      end
+
+      it "allows nil as an explicit value" do
+        instance = subject.new(required_field: nil)
+        expect(instance.required_field).to be_nil
+      end
+
+      it "allows false as an explicit value" do
+        instance = subject.new(required_field: false)
+        expect(instance.required_field).to be false
+      end
+    end
+
+    context "with validates option" do
+      it "applies ActiveModel validations" do
+        service = Class.new(Telephone::Service) do
+          argument :email, validates: {format: {with: /@/}}
+        end
+
+        expect(service.new(email: "invalid").valid?).to be false
+        expect(service.new(email: "valid@example.com").valid?).to be true
+      end
+
+      it "can combine required with validates" do
+        service = Class.new(Telephone::Service) do
+          argument :name, required: true, validates: {length: {minimum: 2}}
+        end
+
+        expect { service.new }.to raise_error(ArgumentError)
+        expect(service.new(name: "A").valid?).to be false
+        expect(service.new(name: "Al").valid?).to be true
       end
     end
   end
