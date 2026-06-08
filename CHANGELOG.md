@@ -4,6 +4,10 @@ This project adheres to [Semantic Versioning](https://semver.org).
 This file is auto-generated so please do not edit it.
 
 ----
+## [1.1.0] - Jun  8, 2026
+8805490
+
+----
 ## [1.0.0] - Aug  5, 2022
 49e71e5
 
