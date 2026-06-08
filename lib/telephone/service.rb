@@ -111,8 +111,9 @@ module Telephone
       #
       # @example
       #   Telephone::Service.call(foo: bar)
-      def call(**args)
-        new(args).call
+      #   Telephone::Service.call({ foo: bar })
+      def call(*args, **kwargs)
+        new(args.extract_options!.merge(kwargs)).call
       end
 
       ##
