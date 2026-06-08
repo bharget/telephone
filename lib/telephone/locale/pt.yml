@@ -1,0 +1,5 @@
+pt:
+  activemodel:
+    errors:
+      messages:
+        invalid_type: "deve ser um %{type}"

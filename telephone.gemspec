@@ -25,4 +25,5 @@ Gem::Specification.new do |s|
   s.requirements << "none"
 
   s.add_dependency "activemodel"
+  s.add_dependency "i18n"
 end

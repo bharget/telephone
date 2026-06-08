@@ -1,0 +1,5 @@
+en:
+  activemodel:
+    errors:
+      messages:
+        invalid_type: "must be a %{type}"
