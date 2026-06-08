@@ -112,6 +112,30 @@ GreetingService.call.result #=> "Hello, John Doe!"
 GreetingService.call(first_name: "Jane").result #=> "Hello, Jane Doe!"
 ```
 
+Arguments can also be validated against a type. When `type:` is provided, the argument is checked with `is_a?` before the service runs. `nil` is allowed unless the argument is also marked as `required:`.
+
+```ruby
+class UpdateUserService < ApplicationService
+  argument :user, type: User, required: true
+
+  def call
+    user.update!(status: "active")
+  end
+end
+
+s = UpdateUserService.call(user: "not a user")
+s.success? #=> false
+s.errors.full_messages #=> ["User must be a User"]
+s.result #=> nil
+```
+
+Type validation works with any class or module:
+
+```ruby
+argument :tags, type: Array
+argument :metadata, type: Enumerable
+```
+
 ### Validations
 
 Since `Telephone::Service` includes `ActiveModel::Model`, you can define validations in the same way you would for an ActiveRecord model.
@@ -125,11 +149,47 @@ def admin_user?
 end
 ```
 
-If a validation fails, the service object will not execute and return `nil` as the result of th call. You can check the status of the service object by calling `success?`.
+If a validation fails, the service object will not execute and return `nil` as the result of the call. You can check the status of the service object by calling `success?`.
 
 ```ruby
 s = SomeService.call
 s.success? #=> false
+```
+
+#### Internationalization
+
+Type validation errors are translated through I18n. Telephone ships with translations for:
+
+* `en` — English
+* `es` — Spanish
+* `fr` — French
+* `de` — German
+* `pt` — Portuguese
+* `ja` — Japanese
+* `zh-CN` — Chinese (Simplified)
+* `it` — Italian
+* `nl` — Dutch
+* `ru` — Russian
+* `ko` — Korean
+
+In a Rails app, these are used automatically based on the current locale:
+
+```ruby
+I18n.locale = :es
+
+s = UpdateUserService.call(user: "not a user")
+s.errors.full_messages #=> ["User debe ser un User"]
+```
+
+You can also override the default message in your own locale files:
+
+```yaml
+# config/locales/telephone.en.yml
+en:
+  activemodel:
+    errors:
+      messages:
+        invalid_type: "must be an instance of %{type}"
 ```
 
 ## Best Practices

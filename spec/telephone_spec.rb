@@ -41,6 +41,106 @@ RSpec.describe Telephone::Service do
       expect(subject.call.success?).to be false
     end
 
+    context "with type validation" do
+      user_class = Struct.new(:name, keyword_init: true)
+
+      def build_service(&block)
+        Class.new(Telephone::Service) do
+          def self.name = "TypeValidationService"
+
+          class_eval(&block)
+        end
+      end
+
+      it "allows a value of the expected type" do
+        service = build_service do
+          argument :user, type: user_class
+
+          def call
+            user
+          end
+        end
+
+        user = user_class.new(name: "Jane")
+        instance = service.new(user: user)
+
+        expect(instance).to be_valid
+        expect(instance.call.success?).to be true
+      end
+
+      it "rejects a value of the wrong type" do
+        service = build_service do
+          argument :user, type: user_class
+        end
+
+        instance = service.new(user: "not a user")
+
+        expect(instance).not_to be_valid
+        expect(instance.errors[:user]).to include("must be a #{user_class.name || user_class}")
+        expect(instance.errors.details[:user]).to include(error: :invalid_type, type: user_class.name || user_class.to_s)
+        expect(instance.call.success?).to be false
+      end
+
+      it "uses the I18n translation for type errors" do
+        service = build_service do
+          argument :name, type: String
+        end
+
+        instance = service.new(name: 123)
+
+        expect(instance).not_to be_valid
+        expect(instance.errors[:name]).to include("must be a String")
+      end
+
+      it "uses the locale-specific translation when I18n locale is changed" do
+        service = build_service do
+          argument :name, type: String
+        end
+
+        instance = service.new(name: 123)
+
+        I18n.with_locale(:es) do
+          expect(instance.tap(&:valid?).errors[:name]).to include("debe ser un String")
+        end
+      end
+
+      it "allows nil when the argument is optional" do
+        service = build_service do
+          argument :user, type: user_class
+
+          def call
+            user
+          end
+        end
+
+        instance = service.new
+
+        expect(instance).to be_valid
+        expect(instance.call.success?).to be true
+      end
+
+      it "works with required arguments" do
+        service = build_service do
+          argument :user, type: user_class, required: true
+        end
+
+        expect(service.new.valid?).to be false
+        expect(service.new(user: "not a user").valid?).to be false
+        expect(service.new(user: user_class.new(name: "Jane")).valid?).to be true
+      end
+
+      it "validates default values" do
+        service = build_service do
+          argument :user, type: user_class, default: "not a user"
+        end
+
+        instance = service.new
+
+        expect(instance).not_to be_valid
+        expect(instance.errors[:user]).to include("must be a #{user_class.name || user_class}")
+      end
+    end
+
     context "with callable defaults" do
       it "evaluates callable defaults fresh on each instantiation" do
         counter = {value: 0}

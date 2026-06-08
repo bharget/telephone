@@ -1,0 +1,5 @@
+ko:
+  activemodel:
+    errors:
+      messages:
+        invalid_type: "%{type}이어야 합니다"

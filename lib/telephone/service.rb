@@ -78,23 +78,33 @@ module Telephone
       # To store a Proc as the actual value, wrap it in another lambda:
       #   argument :my_proc, default: -> { -> { puts "hi" } }
       #
+      # You can also pass +type:+ to validate that the argument is an instance of
+      # the given class or module. Nil values are allowed unless the argument is
+      # also marked as required.
+      #
       # @example
       #   class SomeService < Telephone::Service
       #     argument :first_name, default: "John"
       #     argument :last_name, default: "Doe"
       #     argument :full_name, default: -> { "#{first_name} #{last_name}" }
       #     argument :timestamp, default: -> { DateTime.current }
+      #     argument :user, type: User
       #
       #     def call
       #       puts full_name
       #       puts timestamp
       #     end
       #   end
-      def argument(arg, default: nil, required: false)
-        send(:attr_accessor, arg.to_sym)
-        send(:validates, arg.to_sym, presence: true) if required
+      def argument(arg, default: nil, required: false, type: nil)
+        arg = arg.to_sym
+        send(:attr_accessor, arg)
+        send(:validates, arg, presence: true) if required
 
-        defaults[arg.to_sym] = default
+        if type
+          send(:validates_with, Telephone::TypeValidator, attributes: arg, with: type, allow_nil: true)
+        end
+
+        defaults[arg] = default
       end
 
       ##

@@ -1,0 +1,5 @@
+ru:
+  activemodel:
+    errors:
+      messages:
+        invalid_type: "должно быть %{type}"
