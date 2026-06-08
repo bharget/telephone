@@ -25,6 +25,16 @@ RSpec.describe Telephone::Service do
       expect(subject.call(foo: "baz").foo).to be "baz"
     end
 
+    it "allows passing a hash of arguments" do
+      expect(subject.call({foo: "baz"}).foo).to be "baz"
+    end
+
+    it "merges a hash with keyword arguments" do
+      subject.public_send(:argument, :bar, default: "qux")
+
+      expect(subject.call({foo: "baz"}, bar: "override").bar).to be "override"
+    end
+
     it "allows requiring an argument" do
       subject.public_send(:argument, :required_field, required: true)
 
