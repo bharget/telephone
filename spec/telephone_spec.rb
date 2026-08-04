@@ -141,6 +141,95 @@ RSpec.describe Telephone::Service do
       end
     end
 
+    context "with sequential argument validations" do
+      def build_service(&block)
+        Class.new(Telephone::Service) do
+          def self.name = "SequentialValidationService"
+
+          class_eval(&block)
+        end
+      end
+
+      it "skips custom validations when a required argument is missing" do
+        custom_ran = false
+        service = build_service do
+          argument :object, required: true, type: Hash
+
+          validate do
+            custom_ran = true
+            errors.add(:object, "must have user key") unless object.key?(:user)
+          end
+        end
+
+        instance = service.new
+
+        expect(instance).not_to be_valid
+        expect(custom_ran).to be false
+        expect(instance.errors[:object]).to include("can't be blank")
+        expect(instance.errors[:object]).not_to include("must have user key")
+      end
+
+      it "skips custom validations when an argument has the wrong type" do
+        custom_ran = false
+        service = build_service do
+          argument :object, required: true, type: Hash
+
+          validate do
+            custom_ran = true
+            errors.add(:object, "must have user key") unless object.key?(:user)
+          end
+        end
+
+        instance = service.new(object: "not a hash")
+
+        expect(instance).not_to be_valid
+        expect(custom_ran).to be false
+        expect(instance.errors[:object]).to include("must be a Hash")
+        expect(instance.errors[:object]).not_to include("must have user key")
+      end
+
+      it "runs custom validations when argument validations pass" do
+        custom_ran = false
+        service = build_service do
+          argument :object, required: true, type: Hash
+
+          validate do
+            custom_ran = true
+            errors.add(:object, "must have user key") unless object.key?(:user)
+          end
+        end
+
+        instance = service.new(object: {other: true})
+
+        expect(instance).not_to be_valid
+        expect(custom_ran).to be true
+        expect(instance.errors[:object]).to include("must have user key")
+      end
+
+      it "allows custom validations to assume presence and type" do
+        service = build_service do
+          argument :object, required: true, type: Hash
+
+          validate :contains_user_key
+
+          def contains_user_key
+            return if object.key?(:user)
+
+            errors.add(:object, "must have user key")
+          end
+        end
+
+        expect(service.new).not_to be_valid
+        expect(service.new(object: "nope")).not_to be_valid
+
+        missing_key = service.new(object: {other: true})
+        expect(missing_key).not_to be_valid
+        expect(missing_key.errors[:object]).to include("must have user key")
+
+        expect(service.new(object: {user: 1})).to be_valid
+      end
+    end
+
     context "with callable defaults" do
       it "evaluates callable defaults fresh on each instantiation" do
         counter = {value: 0}

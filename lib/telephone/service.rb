@@ -61,6 +61,22 @@ module Telephone
       self
     end
 
+    private
+
+    ##
+    # Runs +required+/+type+ argument checks before any custom ActiveModel
+    # validations (+validates+/+validate+). If an argument check fails, custom
+    # validations are skipped so they can assume presence and type.
+    def run_validations!
+      run_argument_validations!
+
+      errors.empty? && super
+    end
+
+    def run_argument_validations!
+      self.class.argument_validators.each { |validator| validator.validate(self) }
+    end
+
     class << self
       ##
       # Defines a getter/setter for a service object argument. This also allows you
@@ -82,6 +98,10 @@ module Telephone
       # the given class or module. Nil values are allowed unless the argument is
       # also marked as required.
       #
+      # Argument-level +required+ and +type+ checks always run before any custom
+      # ActiveModel validations (+validates+/+validate+). If an argument check
+      # fails, custom validations are skipped.
+      #
       # @example
       #   class SomeService < Telephone::Service
       #     argument :first_name, default: "John"
@@ -97,11 +117,14 @@ module Telephone
       #   end
       def argument(arg, default: nil, required: false, type: nil)
         arg = arg.to_sym
-        send(:attr_accessor, arg)
-        send(:validates, arg, presence: true) if required
+        attr_accessor arg
+
+        if required
+          argument_validators << ActiveModel::Validations::PresenceValidator.new(attributes: arg)
+        end
 
         if type
-          send(:validates_with, Telephone::TypeValidator, attributes: arg, with: type, allow_nil: true)
+          argument_validators << Telephone::TypeValidator.new(attributes: arg, with: type, allow_nil: true)
         end
 
         defaults[arg] = default
@@ -112,6 +135,13 @@ module Telephone
       # based on the options in #argument.
       def defaults
         @defaults ||= {}
+      end
+
+      ##
+      # Argument-level validators (+required+/+type+) registered via #argument.
+      # Built once at definition time; run before custom ActiveModel validations.
+      def argument_validators
+        @argument_validators ||= []
       end
 
       ##
